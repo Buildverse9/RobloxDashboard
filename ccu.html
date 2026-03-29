@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YASH STUDIO — Live CCU</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#080b10; --panel:#0d1117; --border:#1a2a1a;
+    --green:#00ff88; --yellow:#ffd700; --red:#ff4455; --blue:#00cfff; --purple:#bf7fff;
+    --text:#c8ffd8; --muted:#4a7a5a;
+    --font-mono:'Share Tech Mono',monospace; --font-hud:'Orbitron',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh;
+    background-image:radial-gradient(ellipse at 15% 0%,rgba(0,255,136,.07) 0%,transparent 55%),
+    radial-gradient(ellipse at 85% 90%,rgba(0,207,255,.04) 0%,transparent 55%),
+    repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(0,255,136,.025) 39px,rgba(0,255,136,.025) 40px),
+    repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(0,255,136,.025) 39px,rgba(0,255,136,.025) 40px);}
+  ::-webkit-scrollbar{width:6px;} ::-webkit-scrollbar-track{background:var(--bg);} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+  nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 40px;background:rgba(8,11,16,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}
+  .nav-brand{display:flex;align-items:center;gap:12px;text-decoration:none;}
+  .nav-icon{width:36px;height:36px;background:var(--green);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--font-hud);font-weight:900;font-size:14px;color:#000;box-shadow:0 0 16px rgba(0,255,136,.45);}
+  .nav-title{font-family:var(--font-hud);font-size:14px;font-weight:700;letter-spacing:3px;color:var(--green);}
+  .nav-sub{font-size:9px;color:var(--muted);letter-spacing:2px;}
+  .nav-links{display:flex;gap:6px;}
+  .nav-link{font-family:var(--font-hud);font-size:9px;letter-spacing:2px;color:var(--muted);padding:7px 14px;border-radius:4px;cursor:pointer;transition:all .2s;border:1px solid transparent;text-decoration:none;}
+  .nav-link:hover,.nav-link.active{color:var(--green);border-color:rgba(0,255,136,.2);background:rgba(0,255,136,.06);}
+
+  .page{max-width:1200px;margin:0 auto;padding:36px 24px 80px;}
+  .sec-head{display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap;}
+  .sec-head-line{flex:1;height:1px;background:var(--border);}
+  .sec-label{font-family:var(--font-hud);font-size:9px;letter-spacing:4px;color:var(--muted);white-space:nowrap;}
+  .sec-badge{font-size:9px;color:var(--green);background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);border-radius:10px;padding:2px 10px;letter-spacing:1px;}
+
+  /* TOTAL CARD */
+  .ccu-total-card{background:var(--panel);border:1px solid rgba(0,255,136,.25);border-radius:14px;padding:24px 32px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden;box-shadow:0 0 40px rgba(0,255,136,.06);}
+  .ccu-total-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--green),transparent);}
+  .ccu-total-label{font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:8px;}
+  .ccu-total-value{font-family:var(--font-hud);font-size:48px;font-weight:900;color:var(--green);line-height:1;text-shadow:0 0 30px rgba(0,255,136,.4);}
+  .ccu-total-sub{font-size:10px;color:var(--muted);margin-top:6px;}
+  .ccu-right{text-align:right;display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
+  .ccu-refresh-btn{font-family:var(--font-hud);font-size:9px;letter-spacing:2px;color:var(--green);background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);border-radius:6px;padding:8px 16px;cursor:pointer;transition:all .2s;}
+  .ccu-refresh-btn:hover{background:rgba(0,255,136,.15);}
+  .ccu-refresh-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .ccu-updated{font-size:9px;color:var(--muted);letter-spacing:1px;}
+  .peak-total{font-size:10px;color:var(--yellow);letter-spacing:1px;}
+
+  /* GAMES GRID */
+  .games-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+
+  .game-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .2s,transform .2s;animation:fadeUp .4s ease both;display:flex;flex-direction:column;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+  .game-card:hover{border-color:rgba(0,255,136,.3);transform:translateY(-2px);}
+
+  /* 16:9 THUMBNAIL */
+  .game-thumb-wrap{position:relative;width:100%;padding-top:56.25%;background:#0a1a0a;overflow:hidden;}
+  .game-thumb-wrap img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;}
+  .game-thumb-placeholder{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:32px;background:linear-gradient(135deg,#0a1a0a,#0f2a0f);animation:shimmer 1.5s ease infinite alternate;}
+  @keyframes shimmer{from{opacity:.6;}to{opacity:1;}}
+  .game-rank{position:absolute;top:8px;right:8px;font-family:var(--font-hud);font-size:16px;font-weight:900;color:var(--green);opacity:.35;line-height:1;background:rgba(8,11,16,.6);padding:3px 7px;border-radius:4px;}
+  .game-rank.top3{opacity:1;color:var(--yellow);text-shadow:0 0 10px rgba(255,215,0,.5);}
+  .peak-badge{position:absolute;top:8px;left:8px;font-size:8px;color:var(--yellow);background:rgba(8,11,16,.8);border:1px solid rgba(255,215,0,.3);border-radius:4px;padding:3px 7px;letter-spacing:1px;}
+
+  .game-body{padding:14px;flex:1;}
+  .game-name{font-family:var(--font-hud);font-size:11px;font-weight:700;color:var(--text);letter-spacing:1px;margin-bottom:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  .game-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
+  .game-stat{display:flex;flex-direction:column;gap:2px;}
+  .gs-label{font-size:7px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;}
+  .gs-val{font-family:var(--font-hud);font-size:14px;font-weight:700;color:var(--green);line-height:1;}
+  .gs-val.blue{color:var(--blue);}
+  .gs-val.yellow{color:var(--yellow);}
+  .gs-val.purple{color:var(--purple);}
+  .gs-val.red{color:var(--red);}
+
+  /* LIKE BAR */
+  .like-bar-wrap{margin-bottom:10px;}
+  .like-bar-labels{display:flex;justify-content:space-between;font-size:8px;color:var(--muted);margin-bottom:4px;}
+  .like-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;display:flex;}
+  .like-fill{height:100%;background:var(--green);border-radius:2px 0 0 2px;transition:width .8s ease;}
+  .dislike-fill{height:100%;background:var(--red);border-radius:0 2px 2px 0;transition:width .8s ease;}
+
+  /* CCU BAR */
+  .game-ccu-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+  .game-ccu-fill{height:100%;background:var(--green);border-radius:2px;transition:width .8s ease;box-shadow:0 0 8px rgba(0,255,136,.4);}
+
+  /* LOADING / ERROR */
+  .game-loading{display:flex;align-items:center;justify-content:center;height:80px;color:var(--muted);font-size:11px;letter-spacing:2px;}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;margin-right:8px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .ccu-error{text-align:center;padding:40px;color:var(--muted);font-size:11px;letter-spacing:2px;border:1px dashed var(--border);border-radius:12px;}
+  .ccu-error span{color:var(--red);display:block;margin-bottom:8px;font-size:20px;}
+
+  footer{text-align:center;padding:24px;font-size:9px;color:var(--muted);letter-spacing:2px;border-top:1px solid var(--border);}
+  @media(max-width:768px){nav{padding:12px 16px;} .nav-links{display:none;} .page{padding:20px 14px 60px;} .ccu-total-card{flex-direction:column;gap:16px;text-align:center;} .ccu-right{align-items:center;} .ccu-total-value{font-size:36px;} .games-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html">
+    <div class="nav-icon">YS</div>
+    <div><div class="nav-title">YASH STUDIO</div><div class="nav-sub">LIVE CCU TRACKER</div></div>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link active" href="ccu.html">LIVE CCU</a>
+    <a class="nav-link" href="calculator.html">CALCULATOR</a>
+    <a class="nav-link" href="dashboard.html">DASHBOARD</a>
+  </div>
+</nav>
+
+<div class="page">
+  <section id="ccu">
+    <div class="sec-head">
+      <div class="sec-label">LIVE CONCURRENT USERS</div>
+      <div class="sec-head-line"></div>
+      <div class="sec-badge" id="ccu-game-count">LOADING</div>
+    </div>
+
+    <div class="ccu-total-card">
+      <div>
+        <div class="ccu-total-label">TOTAL CCU — ALL GAMES</div>
+        <div class="ccu-total-value" id="total-ccu">—</div>
+        <div class="ccu-total-sub">Players online right now · sorted by CCU</div>
+      </div>
+      <div class="ccu-right">
+        <button class="ccu-refresh-btn" id="refresh-btn" onclick="loadCCU()">&#8635; REFRESH</button>
+        <div class="ccu-updated" id="ccu-updated">Last updated: —</div>
+        <div class="peak-total" id="peak-total"></div>
+      </div>
+    </div>
+
+    <div class="games-grid" id="games-grid">
+      <div class="game-card">
+        <div class="game-loading"><span class="spinner"></span> FETCHING GAMES...</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer>YASH STUDIO — LIVE CCU &nbsp;&#183;&nbsp; RANKED BY CONCURRENT USERS &nbsp;&#183;&nbsp; PEAK CCU TRACKED</footer>
+
+<script>
+var GROUP_ID = 610009273;
+var PROXY    = 'https://games.roproxy.com';
+var THUMB    = 'https://thumbnails.roproxy.com';
+
+// Peak CCU storage
+var peakCCU = {};
+try{ peakCCU = JSON.parse(localStorage.getItem('ys-peak-ccu')||'{}'); }catch(e){}
+
+window.onload = function(){ loadCCU(); };
+
+function loadCCU() {
+  var btn = document.getElementById('refresh-btn');
+  btn.disabled = true; btn.textContent = '⟳ LOADING...';
+  document.getElementById('total-ccu').textContent = '—';
+  document.getElementById('ccu-game-count').textContent = 'LOADING';
+  document.getElementById('games-grid').innerHTML =
+    '<div class="game-card"><div class="game-loading"><span class="spinner"></span> FETCHING GAMES...</div></div>';
+
+  // Step 1: Get group games
+  fetch(PROXY+'/v2/groups/'+GROUP_ID+'/games?accessFilter=Public&limit=50&sortOrder=Asc')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var games = d.data||[];
+      if(!games.length){ showError('No public games found in this group.'); return; }
+
+      var uIds = games.map(function(g){ return g.id; }).join(',');
+
+      // Step 2: Get game details (CCU, visits, likes)
+      return fetch(PROXY+'/v1/games?universeIds='+uIds)
+        .then(function(r){ return r.json(); })
+        .then(function(det){
+          var detMap={};
+          (det.data||[]).forEach(function(d){ detMap[d.id]=d; });
+
+          // Step 3: Get votes (likes/dislikes)
+          return fetch(PROXY+'/v1/games/votes?universeIds='+uIds)
+            .then(function(r){ return r.json(); })
+            .then(function(votes){
+              var voteMap={};
+              (votes.data||[]).forEach(function(v){ voteMap[v.id]=v; });
+
+              // Step 4: Get favorites
+              return fetchFavorites(games, detMap, voteMap);
+            });
+        });
+    })
+    .catch(function(){
+      showError('Could not connect to Roblox API via proxy.<br>Check your internet connection and try again.');
+    })
+    .finally(function(){
+      btn.disabled=false; btn.textContent='⟳ REFRESH';
+      document.getElementById('ccu-updated').textContent='Last updated: '+new Date().toLocaleTimeString();
+    });
+}
+
+function fetchFavorites(games, detMap, voteMap) {
+  // Fetch favorites count for each game individually (Roblox API limitation)
+  var favMap = {};
+  var promises = games.map(function(g){
+    return fetch(PROXY+'/v1/games/'+g.id+'/favorites/count')
+      .then(function(r){ return r.json(); })
+      .then(function(d){ favMap[g.id] = d.favoritesCount||0; })
+      .catch(function(){ favMap[g.id]=0; });
+  });
+
+  return Promise.all(promises).then(function(){
+    // Now get thumbnails
+    var uIds = games.map(function(g){ return g.id; }).join(',');
+    return fetch(THUMB+'/v1/games/multiget/thumbnails?universeIds='+uIds+'&countPerUniverse=1&defaults=true&size=768x432&format=Png&isCircular=false')
+      .then(function(r){ return r.json(); })
+      .then(function(td){
+        var thumbMap={};
+        (td.data||[]).forEach(function(item){
+          if(item.thumbnails&&item.thumbnails[0]&&item.thumbnails[0].imageUrl){
+            thumbMap[item.universeId]=item.thumbnails[0].imageUrl;
+          }
+        });
+        renderGames(games, detMap, voteMap, favMap, thumbMap);
+      })
+      .catch(function(){
+        renderGames(games, detMap, voteMap, favMap, {});
+      });
+  });
+}
+
+function renderGames(games, detMap, voteMap, favMap, thumbMap) {
+  var grid = document.getElementById('games-grid');
+  grid.innerHTML='';
+
+  // Merge and sort by CCU
+  var merged = games.map(function(g){
+    var det=detMap[g.id]||{}, vote=voteMap[g.id]||{};
+    return { game:g, ccu:det.playing||0, visits:det.visits||0,
+      likes:vote.upVotes||0, dislikes:vote.downVotes||0, favs:favMap[g.id]||0,
+      thumb:thumbMap[g.id]||null };
+  });
+  merged.sort(function(a,b){ return b.ccu-a.ccu; });
+
+  var totalCCU=0, totalPeak=0;
+  var maxCCU=Math.max.apply(null,merged.map(function(m){ return m.ccu; }).concat([1]));
+
+  merged.forEach(function(item,idx){
+    var g=item.game, ccu=item.ccu, rank=idx+1;
+    totalCCU+=ccu;
+
+    // Update peak CCU
+    if(!peakCCU[g.id]||ccu>peakCCU[g.id]) peakCCU[g.id]=ccu;
+    totalPeak+=peakCCU[g.id];
+
+    var pct=maxCCU>0?Math.round((ccu/maxCCU)*100):0;
+    var rankClass=rank<=3?'game-rank top3':'game-rank';
+    var totalVotes=item.likes+item.dislikes;
+    var likePct=totalVotes>0?Math.round((item.likes/totalVotes)*100):0;
+    var isPeakNow=(peakCCU[g.id]===ccu&&ccu>0);
+
+    var card=document.createElement('div');
+    card.className='game-card';
+    card.style.animationDelay=(idx*.07)+'s';
+
+    // Thumbnail
+    var thumbHtml;
+    if(item.thumb){
+      thumbHtml='<img src="'+item.thumb+'" alt="" onerror="this.style.display=\'none\';this.parentNode.querySelector(\'.game-thumb-placeholder\').style.display=\'flex\'">'
+        +'<div class="game-thumb-placeholder" style="display:none">&#127918;</div>';
+    } else {
+      thumbHtml='<div class="game-thumb-placeholder">&#127918;</div>';
+    }
+
+    card.innerHTML=
+      '<div class="game-thumb-wrap">'
+        +thumbHtml
+        +'<div class="'+rankClass+'">#'+rank+'</div>'
+        +(isPeakNow?'<div class="peak-badge">&#9650; PEAK CCU</div>':'')
+      +'</div>'
+      +'<div class="game-body">'
+        +'<div class="game-name">'+( g.name||'Unnamed Game')+'</div>'
+        +'<div class="game-stats">'
+          +'<div class="game-stat"><span class="gs-label">PLAYING NOW</span><span class="gs-val">'+fmt(ccu)+'</span></div>'
+          +'<div class="game-stat"><span class="gs-label">PEAK CCU</span><span class="gs-val yellow">'+fmt(peakCCU[g.id]||ccu)+'</span></div>'
+          +'<div class="game-stat"><span class="gs-label">VISITS</span><span class="gs-val blue">'+fmtBig(item.visits)+'</span></div>'
+          +'<div class="game-stat"><span class="gs-label">FAVORITES</span><span class="gs-val purple">'+fmtBig(item.favs)+'</span></div>'
+          +'<div class="game-stat"><span class="gs-label">LIKES</span><span class="gs-val">'+fmtBig(item.likes)+'</span></div>'
+          +'<div class="game-stat"><span class="gs-label">DISLIKES</span><span class="gs-val red">'+fmtBig(item.dislikes)+'</span></div>'
+        +'</div>'
+        +'<div class="like-bar-wrap">'
+          +'<div class="like-bar-labels"><span style="color:var(--green)">&#9829; '+likePct+'% liked</span><span>'+totalVotes+' total votes</span></div>'
+          +'<div class="like-bar">'
+            +'<div class="like-fill" style="width:'+likePct+'%"></div>'
+            +'<div class="dislike-fill" style="width:'+(100-likePct)+'%"></div>'
+          +'</div>'
+        +'</div>'
+        +'<div class="game-ccu-bar"><div class="game-ccu-fill" style="width:'+pct+'%"></div></div>'
+      +'</div>';
+
+    grid.appendChild(card);
+  });
+
+  // Save peak CCU
+  try{ localStorage.setItem('ys-peak-ccu',JSON.stringify(peakCCU)); }catch(e){}
+
+  document.getElementById('total-ccu').textContent=fmt(totalCCU);
+  document.getElementById('ccu-game-count').textContent=merged.length+' GAMES';
+  document.getElementById('peak-total').textContent=totalPeak?'ALL-TIME PEAK: '+fmt(totalPeak):'';
+}
+
+function showError(msg) {
+  document.getElementById('games-grid').innerHTML=
+    '<div class="ccu-error" style="grid-column:1/-1"><span>&#9888;</span>'+msg+'</div>';
+  document.getElementById('total-ccu').textContent='—';
+  document.getElementById('ccu-game-count').textContent='ERROR';
+}
+
+function fmt(n){ return new Intl.NumberFormat('en-IN').format(Math.round(n)); }
+function fmtBig(n){
+  if(n>=1e9) return (n/1e9).toFixed(1)+'B';
+  if(n>=1e6) return (n/1e6).toFixed(1)+'M';
+  if(n>=1e3) return (n/1e3).toFixed(1)+'K';
+  return String(n);
+}
+</script>
+</body>
+</html>
