@@ -165,7 +165,10 @@ function loadCCU() {
 
   // Step 1: Get group games
   fetch(PROXY+'/v2/groups/'+GROUP_ID+'/games?accessFilter=Public&limit=50&sortOrder=Asc')
-    .then(function(r){ return r.json(); })
+    .then(function(r){ 
+      if(!r.ok) throw new Error('Step 1 failed: '+r.status+' '+r.statusText); 
+      return r.json(); 
+    })
     .then(function(d){
       var games = d.data||[];
       if(!games.length){ showError('No public games found in this group.'); return; }
@@ -174,25 +177,41 @@ function loadCCU() {
 
       // Step 2: Get game details (CCU, visits, likes)
       return fetch(PROXY+'/v1/games?universeIds='+uIds)
-        .then(function(r){ return r.json(); })
+        .then(function(r){ 
+          if(!r.ok) throw new Error('Step 2 failed: '+r.status+' '+r.statusText); 
+          return r.json(); 
+        })
         .then(function(det){
           var detMap={};
           (det.data||[]).forEach(function(d){ detMap[d.id]=d; });
 
           // Step 3: Get votes (likes/dislikes)
           return fetch(PROXY+'/v1/games/votes?universeIds='+uIds)
-            .then(function(r){ return r.json(); })
+            .then(function(r){ 
+              if(!r.ok) throw new Error('Step 3 failed: '+r.status+' '+r.statusText); 
+              return r.json(); 
+            })
             .then(function(votes){
               var voteMap={};
               (votes.data||[]).forEach(function(v){ voteMap[v.id]=v; });
 
               // Step 4: Get favorites
               return fetchFavorites(games, detMap, voteMap);
+            })
+            .catch(function(e){
+              console.error('Votes fetch error:', e);
+              throw e;
             });
+        })
+        .catch(function(e){
+          console.error('Game details fetch error:', e);
+          throw e;
         });
     })
-    .catch(function(){
-      showError('Could not connect to Roblox API via proxy.<br>Check your internet connection and try again.');
+    .catch(function(e){
+      var errMsg = (e && e.message) ? e.message : 'Unknown error';
+      console.error('CCU fetch failed:', errMsg);
+      showError('Could not fetch CCU data.<br><strong>Error:</strong> '+errMsg+'<br>Check console for details.');
     })
     .finally(function(){
       btn.disabled=false; btn.textContent='⟳ REFRESH';
@@ -205,16 +224,25 @@ function fetchFavorites(games, detMap, voteMap) {
   var favMap = {};
   var promises = games.map(function(g){
     return fetch(PROXY+'/v1/games/'+g.id+'/favorites/count')
-      .then(function(r){ return r.json(); })
+      .then(function(r){ 
+        if(!r.ok) throw new Error('Game '+g.id+' favorites: '+r.status); 
+        return r.json(); 
+      })
       .then(function(d){ favMap[g.id] = d.favoritesCount||0; })
-      .catch(function(){ favMap[g.id]=0; });
+      .catch(function(e){ 
+        console.warn('Favorites fetch error for game '+g.id+':', e);
+        favMap[g.id]=0; 
+      });
   });
 
   return Promise.all(promises).then(function(){
     // Now get thumbnails
     var uIds = games.map(function(g){ return g.id; }).join(',');
     return fetch(THUMB+'/v1/games/multiget/thumbnails?universeIds='+uIds+'&countPerUniverse=1&defaults=true&size=768x432&format=Png&isCircular=false')
-      .then(function(r){ return r.json(); })
+      .then(function(r){ 
+        if(!r.ok) throw new Error('Step 4 Thumbnails failed: '+r.status+' '+r.statusText); 
+        return r.json(); 
+      })
       .then(function(td){
         var thumbMap={};
         (td.data||[]).forEach(function(item){
@@ -224,7 +252,8 @@ function fetchFavorites(games, detMap, voteMap) {
         });
         renderGames(games, detMap, voteMap, favMap, thumbMap);
       })
-      .catch(function(){
+      .catch(function(e){
+        console.error('Thumbnail fetch error:', e);
         renderGames(games, detMap, voteMap, favMap, {});
       });
   });
