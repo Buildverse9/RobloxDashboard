@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YASH STUDIO — Game Concepts Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080b10;--panel:#0d1117;--panel2:#0f1520;--border:#1a2a1a;
+  --green:#00ff88;--yellow:#ffd700;--red:#ff4455;--blue:#00cfff;
+  --purple:#bf7fff;--orange:#ff9944;--pink:#ff66aa;
+  --text:#c8ffd8;--muted:#4a7a5a;
+  --font-mono:'Share Tech Mono',monospace;--font-hud:'Orbitron',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh;
+  background-image:radial-gradient(ellipse at 10% 0%,rgba(0,255,136,.06) 0%,transparent 50%),
+  radial-gradient(ellipse at 90% 100%,rgba(191,127,255,.04) 0%,transparent 50%),
+  repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(0,255,136,.02) 39px,rgba(0,255,136,.02) 40px),
+  repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(0,255,136,.02) 39px,rgba(0,255,136,.02) 40px);}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+/* ── PASSWORD ── */
+.pw-overlay{position:fixed;inset:0;background:rgba(8,11,16,.98);display:flex;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(12px);}
+.pw-box{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:52px 44px;text-align:center;max-width:420px;width:92%;box-shadow:0 0 80px rgba(0,255,136,.07);position:relative;overflow:hidden;}
+.pw-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--purple),transparent);}
+.pw-icon{font-size:40px;margin-bottom:18px;display:block;}
+.pw-title{font-family:var(--font-hud);font-size:14px;letter-spacing:5px;color:var(--purple);margin-bottom:6px;}
+.pw-sub{font-size:9px;color:var(--muted);letter-spacing:2px;margin-bottom:30px;}
+.pw-input{background:#0a0f0a;border:1px solid var(--border);border-radius:10px;color:var(--purple);
+  font-family:var(--font-hud);font-size:20px;font-weight:700;padding:16px;width:100%;outline:none;
+  text-align:center;letter-spacing:8px;transition:all .2s;margin-bottom:14px;}
+.pw-input:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(191,127,255,.1);}
+.pw-input.error{border-color:var(--red);animation:shake .4s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
+.pw-btn{font-family:var(--font-hud);font-size:10px;letter-spacing:3px;font-weight:700;padding:14px;border-radius:10px;cursor:pointer;border:none;background:var(--purple);color:#000;box-shadow:0 0 24px rgba(191,127,255,.3);transition:all .2s;width:100%;}
+.pw-btn:hover{box-shadow:0 0 40px rgba(191,127,255,.5);transform:translateY(-1px);}
+.pw-err{font-size:9px;color:var(--red);letter-spacing:1px;margin-top:10px;min-height:14px;}
+.main-wrap{display:none;}.main-wrap.on{display:flex;}
+
+/* ── NAV ── */
+nav{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;height:54px;background:rgba(8,11,16,.96);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);}
+.nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nav-icon{width:30px;height:30px;background:var(--purple);border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-hud);font-weight:900;font-size:11px;color:#000;box-shadow:0 0 12px rgba(191,127,255,.4);}
+.nav-title{font-family:var(--font-hud);font-size:12px;font-weight:700;letter-spacing:3px;color:var(--purple);}
+.nav-links{display:flex;gap:4px;}
+.nav-link{font-family:var(--font-hud);font-size:8px;letter-spacing:2px;color:var(--muted);padding:5px 11px;border-radius:4px;cursor:pointer;transition:all .2s;border:1px solid transparent;text-decoration:none;}
+.nav-link:hover{color:var(--green);border-color:rgba(0,255,136,.2);background:rgba(0,255,136,.06);}
+.nav-link.active{color:var(--purple);border-color:rgba(191,127,255,.2);background:rgba(191,127,255,.06);}
+
+/* ── SIDEBAR ── */
+.main-wrap{display:flex;height:calc(100vh - 54px);}
+.sidebar{width:240px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;padding:16px 0;background:rgba(13,17,23,.8);}
+.sb-header{padding:0 16px 12px;border-bottom:1px solid var(--border);margin-bottom:12px;}
+.sb-title{font-family:var(--font-hud);font-size:9px;letter-spacing:3px;color:var(--muted);}
+.sb-btn{width:calc(100% - 32px);margin:0 16px 12px;font-family:var(--font-hud);font-size:8px;letter-spacing:2px;font-weight:700;padding:9px;border-radius:7px;cursor:pointer;border:1px solid rgba(191,127,255,.3);background:rgba(191,127,255,.07);color:var(--purple);transition:all .2s;}
+.sb-btn:hover{background:rgba(191,127,255,.15);}
+.concept-item{padding:10px 16px;cursor:pointer;border-left:3px solid transparent;transition:all .15s;display:flex;align-items:center;gap:8px;}
+.concept-item:hover{background:rgba(191,127,255,.05);border-left-color:rgba(191,127,255,.3);}
+.concept-item.active{background:rgba(191,127,255,.1);border-left-color:var(--purple);}
+.ci-icon{font-size:16px;flex-shrink:0;}
+.ci-name{font-size:10px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;}
+.ci-del{background:none;border:none;color:transparent;cursor:pointer;font-size:11px;transition:color .15s;padding:2px;}
+.concept-item:hover .ci-del{color:var(--red);}
+
+/* ── CONTENT AREA ── */
+.content{flex:1;overflow-y:auto;padding:28px 32px 80px;}
+
+/* ── SECTION BLOCKS ── */
+.sh{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.sh-line{flex:1;height:1px;background:var(--border);}
+.sh-label{font-family:var(--font-hud);font-size:8px;letter-spacing:4px;color:var(--muted);white-space:nowrap;}
+.section-block{margin-bottom:36px;}
+
+/* ── PANEL ── */
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px;}
+.panel-title{font-family:var(--font-hud);font-size:9px;letter-spacing:3px;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.panel-title span{font-size:16px;}
+
+/* ── INPUTS ── */
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.field label{font-size:8px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+.fi{background:#0a0f0a;border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--font-mono);font-size:13px;padding:10px 13px;width:100%;outline:none;transition:border-color .2s;}
+.fi:focus{border-color:var(--purple);box-shadow:0 0 0 2px rgba(191,127,255,.08);}
+.fi::placeholder{color:#2a3a2a;}
+textarea.fi{resize:vertical;min-height:90px;line-height:1.6;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+
+/* ── BUTTONS ── */
+.btn{font-family:var(--font-hud);font-size:8px;letter-spacing:2px;font-weight:700;padding:8px 16px;border-radius:6px;cursor:pointer;border:none;transition:all .2s;white-space:nowrap;}
+.btn-p{background:var(--purple);color:#000;box-shadow:0 0 12px rgba(191,127,255,.25);}
+.btn-p:hover{box-shadow:0 0 22px rgba(191,127,255,.45);transform:translateY(-1px);}
+.btn-g{background:var(--green);color:#000;}
+.btn-g:hover{box-shadow:0 0 18px rgba(0,255,136,.4);transform:translateY(-1px);}
+.btn-s{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-s:hover{border-color:var(--muted);color:var(--text);}
+.btn-r{background:transparent;color:var(--red);border:1px solid rgba(255,68,85,.3);}
+.btn-r:hover{background:rgba(255,68,85,.07);}
+.btn-b{background:transparent;color:var(--blue);border:1px solid rgba(0,207,255,.3);}
+.btn-b:hover{background:rgba(0,207,255,.07);}
+.brow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+
+/* ── IMAGE UPLOADERS ── */
+.asset-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:0;}
+.upload-zone{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;background:#0a0f0a;}
+.upload-zone:hover{border-color:rgba(191,127,255,.4);background:rgba(191,127,255,.04);}
+.upload-zone.has-img{border-style:solid;border-color:rgba(191,127,255,.3);}
+.upload-zone img{width:100%;border-radius:6px;display:block;}
+.upload-zone .thumb-16-9{width:100%;padding-top:56.25%;position:relative;border-radius:6px;overflow:hidden;background:#0f1a0f;}
+.upload-zone .thumb-16-9 img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.uz-label{font-family:var(--font-hud);font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:8px;}
+.uz-icon{font-size:28px;margin-bottom:6px;display:block;}
+.uz-hint{font-size:8px;color:var(--muted);}
+.uz-overlay{position:absolute;inset:0;background:rgba(8,11,16,.7);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;}
+.upload-zone:hover .uz-overlay{opacity:1;}
+.uz-overlay-text{font-family:var(--font-hud);font-size:9px;color:var(--purple);letter-spacing:2px;}
+
+/* ── MECHANICS SECTION ── */
+.mech-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+
+/* ── MONETIZATION ── */
+.mono-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.mono-card{background:#0a0f0a;border:1px solid var(--border);border-radius:8px;padding:14px;}
+.mono-card-title{font-family:var(--font-hud);font-size:8px;letter-spacing:2px;margin-bottom:10px;}
+.mono-items{display:flex;flex-direction:column;gap:6px;}
+.mono-item{display:flex;gap:6px;align-items:center;}
+.mono-item input{flex:1;background:var(--panel);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:11px;padding:6px 8px;outline:none;}
+.mono-item input:focus{border-color:var(--yellow);}
+.mono-item .price{width:70px;color:var(--yellow);}
+.mono-item .del-item{background:none;border:none;color:var(--red);cursor:pointer;opacity:.5;font-size:12px;padding:2px 4px;}
+.mono-item .del-item:hover{opacity:1;}
+.add-mono-btn{font-size:9px;color:var(--muted);background:none;border:1px dashed var(--border);border-radius:5px;padding:6px;width:100%;cursor:pointer;margin-top:6px;transition:all .2s;}
+.add-mono-btn:hover{border-color:var(--yellow);color:var(--yellow);}
+
+/* ── CANVAS ── */
+.canvas-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.tool-btn{font-family:var(--font-hud);font-size:8px;letter-spacing:1px;padding:6px 12px;border-radius:5px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .2s;}
+.tool-btn.active{border-color:var(--purple);color:var(--purple);background:rgba(191,127,255,.1);}
+.tool-btn:hover:not(.active){border-color:var(--muted);color:var(--text);}
+.color-swatch{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:all .15s;}
+.color-swatch.active{border-color:var(--text);transform:scale(1.2);}
+.size-slider{width:80px;accent-color:var(--purple);}
+canvas#draw-canvas{width:100%;height:400px;border:1px solid var(--border);border-radius:8px;background:#0a0f0a;cursor:crosshair;display:block;touch-action:none;}
+
+/* ── SCRATCHPAD ── */
+.scratchpad{background:#0a0f0a;border:1px solid var(--border);border-radius:8px;padding:16px;min-height:200px;color:var(--text);font-family:var(--font-mono);font-size:12px;line-height:1.7;outline:none;resize:vertical;width:100%;}
+.scratchpad:focus{border-color:rgba(0,207,255,.3);}
+.autosave-note{font-size:8px;color:var(--muted);margin-top:6px;letter-spacing:1px;}
+
+/* ── CUSTOM SECTIONS ── */
+.custom-section{background:#0a0f0a;border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;}
+.cs-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.cs-title-input{flex:1;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:var(--font-hud);font-size:10px;letter-spacing:2px;padding:4px 0;outline:none;}
+.cs-title-input:focus{border-bottom-color:var(--purple);}
+.cs-del{background:none;border:none;color:var(--red);cursor:pointer;opacity:.4;font-size:14px;transition:opacity .15s;}
+.cs-del:hover{opacity:1;}
+.cs-textarea{background:var(--panel);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:12px;padding:10px;width:100%;min-height:80px;resize:vertical;outline:none;line-height:1.6;}
+.cs-textarea:focus{border-color:rgba(191,127,255,.3);}
+.checklist{display:flex;flex-direction:column;gap:6px;}
+.check-item{display:flex;align-items:center;gap:8px;}
+.check-item input[type=checkbox]{accent-color:var(--purple);width:14px;height:14px;cursor:pointer;}
+.check-item .ci-text{flex:1;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:12px;padding:4px 2px;outline:none;}
+.check-item .ci-text:focus{border-bottom-color:var(--purple);}
+.check-item.done .ci-text{color:var(--muted);text-decoration:line-through;}
+.check-item .ci-del{background:none;border:none;color:var(--red);cursor:pointer;opacity:.3;font-size:12px;}
+.check-item .ci-del:hover{opacity:1;}
+.add-check-btn{font-size:9px;color:var(--muted);background:none;border:1px dashed var(--border);border-radius:5px;padding:5px 10px;cursor:pointer;margin-top:4px;transition:all .2s;font-family:var(--font-hud);letter-spacing:1px;}
+.add-check-btn:hover{border-color:var(--purple);color:var(--purple);}
+.add-section-btn{width:100%;border:2px dashed rgba(191,127,255,.2);border-radius:10px;padding:14px;background:transparent;color:var(--muted);font-family:var(--font-hud);font-size:9px;letter-spacing:3px;cursor:pointer;transition:all .2s;}
+.add-section-btn:hover{border-color:rgba(191,127,255,.5);color:var(--purple);background:rgba(191,127,255,.04);}
+
+/* ── COMPETITOR ── */
+.comp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:14px;}
+.comp-card{background:#0a0f0a;border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .2s;}
+.comp-card:hover{border-color:rgba(0,207,255,.3);}
+.comp-thumb{width:100%;padding-top:56.25%;position:relative;background:#0f1a1a;}
+.comp-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.comp-thumb-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:24px;}
+.comp-body{padding:12px;}
+.comp-name{font-family:var(--font-hud);font-size:10px;color:var(--text);margin-bottom:6px;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.comp-ccu{display:flex;align-items:center;gap:6px;font-size:9px;}
+.comp-ccu-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.2;}}
+.comp-ccu-val{color:var(--green);font-family:var(--font-hud);font-size:11px;}
+.comp-visits{font-size:8px;color:var(--muted);margin-top:3px;}
+.comp-del{float:right;background:none;border:none;color:var(--red);cursor:pointer;opacity:.4;font-size:12px;transition:opacity .15s;}
+.comp-del:hover{opacity:1;}
+.comp-add-row{display:flex;gap:8px;align-items:center;}
+.comp-add-row input{flex:1;background:#0a0f0a;border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--font-mono);font-size:12px;padding:9px 12px;outline:none;transition:border-color .2s;}
+.comp-add-row input:focus{border-color:var(--blue);}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:80px 20px;color:var(--muted);}
+.empty-icon{font-size:48px;margin-bottom:16px;display:block;}
+.empty-title{font-family:var(--font-hud);font-size:13px;letter-spacing:3px;margin-bottom:8px;}
+.empty-sub{font-size:10px;letter-spacing:1px;}
+
+/* ── GENRE TAGS ── */
+.genre-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.genre-tag{padding:5px 10px;border-radius:20px;font-size:8px;letter-spacing:1px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s;font-family:var(--font-hud);}
+.genre-tag.active{border-color:var(--purple);color:var(--purple);background:rgba(191,127,255,.1);}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--panel);border:1px solid var(--purple);border-radius:8px;padding:10px 16px;font-size:9px;color:var(--purple);letter-spacing:1px;opacity:0;transform:translateY(6px);transition:all .3s;z-index:9999;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+
+/* ── CONCEPT HEADER ── */
+.concept-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;gap:16px;flex-wrap:wrap;}
+.concept-header-left{flex:1;}
+.concept-name-input{background:transparent;border:none;border-bottom:2px solid var(--border);color:var(--purple);font-family:var(--font-hud);font-size:22px;font-weight:700;letter-spacing:3px;padding:6px 0;outline:none;width:100%;transition:border-color .2s;}
+.concept-name-input:focus{border-bottom-color:var(--purple);}
+.concept-status{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.status-tag{padding:4px 10px;border-radius:20px;font-size:7px;letter-spacing:2px;cursor:pointer;border:1px solid transparent;font-family:var(--font-hud);transition:all .15s;}
+.status-tag.idea{border-color:rgba(191,127,255,.3);color:var(--purple);}
+.status-tag.idea.active{background:rgba(191,127,255,.2);}
+.status-tag.wip{border-color:rgba(255,215,0,.3);color:var(--yellow);}
+.status-tag.wip.active{background:rgba(255,215,0,.15);}
+.status-tag.dev{border-color:rgba(0,255,136,.3);color:var(--green);}
+.status-tag.dev.active{background:rgba(0,255,136,.15);}
+.status-tag.live{border-color:rgba(0,207,255,.3);color:var(--blue);}
+.status-tag.live.active{background:rgba(0,207,255,.15);}
+.status-tag.shelved{border-color:rgba(255,68,85,.3);color:var(--red);}
+.status-tag.shelved.active{background:rgba(255,68,85,.15);}
+
+footer{text-align:center;padding:18px;font-size:8px;color:var(--muted);letter-spacing:2px;border-top:1px solid var(--border);}
+@media(max-width:900px){.sidebar{width:200px;} .content{padding:20px 16px 60px;}}
+@media(max-width:700px){.sidebar{display:none;} .content{padding:16px 12px 60px;} .grid-2,.grid-3,.mech-row,.mono-grid,.asset-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- PASSWORD -->
+<div class="pw-overlay" id="pw-overlay">
+  <div class="pw-box">
+    <span class="pw-icon">&#129520;</span>
+    <div class="pw-title">CONCEPTS LAB</div>
+    <div class="pw-sub">YASH STUDIO · PRIVATE ACCESS</div>
+    <input type="password" class="pw-input" id="pw-input" placeholder="••••••••" autofocus>
+    <button class="pw-btn" onclick="checkPw()">ENTER LAB</button>
+    <div class="pw-err" id="pw-err"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-brand" href="index.html">
+    <div class="nav-icon">YS</div>
+    <div><div class="nav-title">YASH STUDIO</div></div>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="ccu.html">LIVE CCU</a>
+    <a class="nav-link" href="calculator.html">CALCULATOR</a>
+    <a class="nav-link" href="dashboard.html">DASHBOARD</a>
+    <a class="nav-link active" href="concepts.html">CONCEPTS LAB</a>
+  </div>
+</nav>
+
+<!-- MAIN LAYOUT -->
+<div class="main-wrap" id="main-wrap">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-header">
+      <div class="sb-title">GAME CONCEPTS</div>
+    </div>
+    <button class="sb-btn" onclick="newConcept()">+ NEW CONCEPT</button>
+    <div id="concept-list"></div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="content">
+    <div class="empty-state" id="empty-state">
+      <span class="empty-icon">&#129520;</span>
+      <div class="empty-title">NO CONCEPT SELECTED</div>
+      <div class="empty-sub">Create a new concept or select one from the sidebar</div>
+      <br>
+      <button class="btn btn-p" onclick="newConcept()" style="margin-top:12px">+ CREATE FIRST CONCEPT</button>
+    </div>
+    <div id="concept-editor" style="display:none"></div>
+  </div>
+
+</div>
+
+<footer>YASH STUDIO CONCEPTS LAB &nbsp;&#183;&nbsp; DATA SAVED LOCALLY &nbsp;&#183;&nbsp; AUTO-SAVE ENABLED</footer>
+
+<script>
+// ══════════════════════════════════════
+//  CONFIG & STATE
+// ══════════════════════════════════════
+var PASS     = '27022009';
+var concepts = [];   // array of concept objects
+var activeCID = null;
+var saveTimer = null;
+var drawCtx, isDrawing = false, lastX = 0, lastY = 0;
+var currentTool = 'pen', currentColor = '#00ff88', currentSize = 3;
+var GENRES = ['OBBY','SIMULATOR','ROLEPLAY','TYCOON','SHOOTER','HORROR','ADVENTURE','PUZZLE','PVP','SOCIAL','STORY','RACING'];
+var PROXY = 'https://games.roproxy.com';
+
+// ══════════════════════════════════════
+//  PASSWORD
+// ══════════════════════════════════════
+window.onload = function() {
+  document.getElementById('pw-input').addEventListener('keydown', function(e){ if(e.key==='Enter') checkPw(); });
+  if (sessionStorage.getItem('ys-concepts-auth')==='1') unlock();
+};
+function checkPw() {
+  var inp = document.getElementById('pw-input');
+  if (inp.value === PASS) { sessionStorage.setItem('ys-concepts-auth','1'); unlock(); }
+  else {
+    inp.classList.add('error');
+    document.getElementById('pw-err').textContent = 'INCORRECT PASSWORD';
+    setTimeout(function(){ inp.classList.remove('error'); }, 500);
+    inp.value = ''; inp.focus();
+  }
+}
+function unlock() {
+  document.getElementById('pw-overlay').style.display = 'none';
+  document.getElementById('main-wrap').classList.add('on');
+  loadConcepts();
+}
+
+// ══════════════════════════════════════
+//  STORAGE
+// ══════════════════════════════════════
+function loadConcepts() {
+  try { concepts = JSON.parse(localStorage.getItem('ys-concepts') || '[]'); } catch(e) { concepts = []; }
+  renderSidebar();
+  if (concepts.length > 0) selectConcept(concepts[0].id);
+}
+function saveConcepts() {
+  try { localStorage.setItem('ys-concepts', JSON.stringify(concepts)); } catch(e) {}
+}
+function autoSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function() { collectCurrentForm(); saveConcepts(); showToast('AUTO-SAVED \u2713'); }, 1200);
+}
+
+// ══════════════════════════════════════
+//  CONCEPT CRUD
+// ══════════════════════════════════════
+function newConcept() {
+  var id = 'c' + Date.now();
+  var c = {
+    id: id, name: 'UNTITLED CONCEPT', status: 'idea',
+    genre: [], audience: '', description: '', thumbnail: null, logo: null,
+    mechanics: { loop: '', levels: '', scripting: '' },
+    monetization: { gamepasses: [], devProducts: [], economy: '' },
+    canvas: null,
+    scratchpad: '',
+    customSections: [],
+    competitors: []
+  };
+  concepts.unshift(c);
+  saveConcepts();
+  renderSidebar();
+  selectConcept(id);
+}
+
+function deleteConcept(id, e) {
+  e.stopPropagation();
+  if (!confirm('Delete this concept?')) return;
+  concepts = concepts.filter(function(c){ return c.id !== id; });
+  saveConcepts();
+  renderSidebar();
+  if (activeCID === id) {
+    activeCID = null;
+    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('concept-editor').style.display = 'none';
+  }
+}
+
+function getConcept(id) { return concepts.find(function(c){ return c.id === id; }); }
+
+function collectCurrentForm() {
+  if (!activeCID) return;
+  var c = getConcept(activeCID); if (!c) return;
+
+  c.name         = v('cn-name') || c.name;
+  c.audience     = v('cn-audience');
+  c.description  = v('cn-desc');
+  c.mechanics.loop      = v('cn-loop');
+  c.mechanics.levels    = v('cn-levels');
+  c.mechanics.scripting = v('cn-scripting');
+  c.monetization.economy = v('cn-economy');
+  c.scratchpad   = v('cn-scratch');
+
+  // Gamepasses
+  c.monetization.gamepasses = collectMonoItems('gp');
+  c.monetization.devProducts = collectMonoItems('dp');
+
+  // Custom sections
+  c.customSections = collectCustomSections();
+
+  saveConcepts();
+  renderSidebar();
+}
+
+function collectMonoItems(prefix) {
+  var items = [];
+  document.querySelectorAll('.mono-item[data-prefix="'+prefix+'"]').forEach(function(row) {
+    var name  = row.querySelector('.item-name').value.trim();
+    var price = row.querySelector('.item-price').value.trim();
+    if (name) items.push({ name: name, price: price });
+  });
+  return items;
+}
+
+function collectCustomSections() {
+  var secs = [];
+  document.querySelectorAll('.custom-section[data-csid]').forEach(function(el) {
+    var csid   = el.dataset.csid;
+    var title  = el.querySelector('.cs-title-input').value;
+    var type   = el.dataset.type;
+    var content = '';
+    var items  = [];
+    if (type === 'text') {
+      content = el.querySelector('.cs-textarea').value;
+    } else {
+      el.querySelectorAll('.check-item').forEach(function(ci) {
+        items.push({ text: ci.querySelector('.ci-text').value, done: ci.querySelector('input[type=checkbox]').checked });
+      });
+    }
+    secs.push({ id: csid, title: title, type: type, content: content, items: items });
+  });
+  return secs;
+}
+
+function v(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+
+// ══════════════════════════════════════
+//  SIDEBAR
+// ══════════════════════════════════════
+function renderSidebar() {
+  var list = document.getElementById('concept-list');
+  list.innerHTML = '';
+  if (!concepts.length) {
+    list.innerHTML = '<div style="padding:12px 16px;font-size:9px;color:var(--muted)">No concepts yet.</div>';
+    return;
+  }
+  concepts.forEach(function(c) {
+    var item = document.createElement('div');
+    item.className = 'concept-item' + (c.id === activeCID ? ' active' : '');
+    item.onclick = function(){ selectConcept(c.id); };
+    var statusColors = {idea:'var(--purple)',wip:'var(--yellow)',dev:'var(--green)',live:'var(--blue)',shelved:'var(--red)'};
+    item.innerHTML = '<span class="ci-icon">&#127918;</span>'
+      + '<span class="ci-name" style="color:' + (statusColors[c.status]||'var(--text)') + '">' + c.name + '</span>'
+      + '<button class="ci-del" onclick="deleteConcept(\''+c.id+'\',event)" title="Delete">&#10005;</button>';
+    list.appendChild(item);
+  });
+}
+
+// ══════════════════════════════════════
+//  RENDER EDITOR
+// ══════════════════════════════════════
+function selectConcept(id) {
+  if (activeCID && activeCID !== id) collectCurrentForm();
+  activeCID = id;
+  var c = getConcept(id); if (!c) return;
+
+  document.getElementById('empty-state').style.display = 'none';
+  var editor = document.getElementById('concept-editor');
+  editor.style.display = 'block';
+
+  editor.innerHTML = buildEditorHTML(c);
+  renderSidebar();
+
+  // Init canvas
+  initCanvas(c);
+
+  // Bind auto-save to all inputs
+  editor.querySelectorAll('input,textarea,select').forEach(function(el) {
+    el.addEventListener('input', autoSave);
+    el.addEventListener('change', autoSave);
+  });
+}
+
+function buildEditorHTML(c) {
+  var statusTags = ['idea','wip','dev','live','shelved'].map(function(s){
+    return '<button class="status-tag '+s+(c.status===s?' active':'')+'" onclick="setStatus(\''+s+'\')">'
+      + s.toUpperCase() + '</button>';
+  }).join('');
+
+  var genreTags = GENRES.map(function(g){
+    return '<button class="genre-tag'+(c.genre&&c.genre.includes(g)?' active':'')+'" onclick="toggleGenre(\''+g+'\')">'
+      + g + '</button>';
+  }).join('');
+
+  var gpItems = buildMonoItems(c.monetization.gamepasses, 'gp', 'Gamepass Name', 'var(--yellow)');
+  var dpItems = buildMonoItems(c.monetization.devProducts, 'dp', 'Product Name', 'var(--orange)');
+
+  var customHTML = (c.customSections||[]).map(buildCustomSectionHTML).join('');
+
+  var compHTML = (c.competitors||[]).map(buildCompCardHTML).join('');
+
+  return `
+  <div class="concept-header">
+    <div class="concept-header-left">
+      <input class="concept-name-input" id="cn-name" value="${esc(c.name)}" placeholder="CONCEPT TITLE" oninput="autoSave()">
+      <div class="concept-status">${statusTags}</div>
+    </div>
+  </div>
+
+  <!-- ── VISUAL ASSETS ── -->
+  <div class="section-block">
+    <div class="sh"><div class="sh-label">&#127912; VISUAL ASSETS</div><div class="sh-line"></div></div>
+    <div class="panel">
+      <div class="asset-grid">
+        <div>
+          <div class="uz-label">GAME THUMBNAIL (16:9)</div>
+          <div class="upload-zone ${c.thumbnail?'has-img':''}" id="thumb-zone" onclick="triggerUpload('thumb-file')">
+            <input type="file" id="thumb-file" accept="image/*" onchange="handleImageUpload('thumb','thumb-zone',event)" style="display:none">
+            ${c.thumbnail
+              ? `<div class="thumb-16-9"><img src="${c.thumbnail}" id="thumb-preview"></div><div class="uz-overlay"><span class="uz-overlay-text">CHANGE IMAGE</span></div>`
+              : `<span class="uz-icon">&#128444;</span><div class="uz-hint">Click to upload thumbnail<br>Recommended: 1920×1080</div>`
+            }
+          </div>
+          ${c.thumbnail ? `<button class="btn btn-r" style="margin-top:6px;font-size:7px;padding:4px 10px" onclick="clearImage('thumb')">&#10005; REMOVE</button>` : ''}
+        </div>
+        <div>
+          <div class="uz-label">GAME LOGO / ICON</div>
+          <div class="upload-zone ${c.logo?'has-img':''}" id="logo-zone" onclick="triggerUpload('logo-file')">
+            <input type="file" id="logo-file" accept="image/*" onchange="handleImageUpload('logo','logo-zone',event)" style="display:none">
+            ${c.logo
+              ? `<img src="${c.logo}" id="logo-preview" style="max-height:140px;object-fit:contain;border-radius:8px"><div class="uz-overlay"><span class="uz-overlay-text">CHANGE IMAGE</span></div>`
+              : `<span class="uz-icon">&#127280;</span><div class="uz-hint">Click to upload logo<br>Recommended: 512×512</div>`
+            }
+          </div>
+          ${c.logo ? `<button class="btn btn-r" style="margin-top:6px;font-size:7px;padding:4px 10px" onclick="clearImage('logo')">&#10005; REMOVE</button>` : ''}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CORE IDENTITY ── -->
+  <div class="section-block">
+    <div class="sh"><div class="sh-label">&#127775; CORE IDENTITY</div><div class="sh-line"></div></div>
+    <div class="panel">
+      <div class="grid-2">
+        <div class="field">
+          <label>GAME TITLE</label>
+          <input class="fi" id="cn-name-dup" value="${esc(c.name)}" placeholder="My Awesome Game" oninput="document.getElementById('cn-name').value=this.value;autoSave()">
+        </div>
+        <div class="field">
+          <label>TARGET AUDIENCE</label>
+          <input class="fi" id="cn-audience" value="${esc(c.audience)}" placeholder="e.g. Ages 10-16, casual players">
+        </div>
+      </div>
+      <div class="field">
+        <label>GENRE (select all that apply)</label>
+        <div class="genre-grid">${genreTags}</div>
+      </div>
+      <div class="field" style="margin-top:10px">
+        <label>GAME DESCRIPTION</label>
+        <textarea class="fi" id="cn-desc" rows="5" placeholder="Describe your game concept, the core fantasy, what makes it unique...">${esc(c.description)}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MECHANICS ── -->
+  <div class="section-block">
+    <div class="sh"><div class="sh-label">&#9881; MECHANICS &amp; ENGINEERING</div><div class="sh-line"></div></div>
+    <div class="panel">
+      <div class="mech-row">
+        <div class="field">
+          <label>CORE GAMEPLAY LOOP</label>
+          <textarea class="fi" id="cn-loop" rows="5" placeholder="What does the player do every session? What keeps them coming back?&#10;e.g. Enter zone → defeat enemies → collect drops → upgrade gear → repeat">${esc(c.mechanics.loop)}</textarea>
+        </div>
+        <div class="field">
+          <label>LEVEL DESIGN REQUIREMENTS</label>
+          <textarea class="fi" id="cn-levels" rows="5" placeholder="Map structure, biomes, stages, spawn points, progression gates...">${esc(c.mechanics.levels)}</textarea>
+        </div>
+      </div>
+      <div class="field" style="margin-top:4px">
+        <label>SCRIPTING NEEDS &amp; SYSTEMS</label>
+        <textarea class="fi" id="cn-scripting" rows="4" placeholder="List the Lua scripts / modules needed: inventory system, combat module, data store, UI manager, leaderboards...">${esc(c.mechanics.scripting)}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MONETIZATION ── -->
+  <div class="section-block">
+    <div class="sh"><div class="sh-label">&#128176; MONETIZATION STRATEGY</div><div class="sh-line"></div></div>
+    <div class="panel">
+      <div class="mono-grid">
+        <div class="mono-card">
+          <div class="mono-card-title" style="color:var(--yellow)">&#128737; GAMEPASSES</div>
+          <div class="mono-items" id="gp-list">${gpItems}</div>
+          <button class="add-mono-btn" onclick="addMonoItem('gp')">+ ADD GAMEPASS</button>
+        </div>
+        <div class="mono-card">
+          <div class="mono-card-title" style="color:var(--orange)">&#127752; DEVELOPER PRODUCTS</div>
+          <div class="mono-items" id="dp-list">${dpItems}</div>
+          <button class="add-mono-btn" onclick="addMonoItem('dp')">+ ADD PRODUCT</button>
+        </div>
+        <div class="mono-card" style="grid-column:1/-1">
+          <div class="mono-card-title" style="color:var(--blue)">&#127915; IN-GAME ECONOMY PACING</div>
+          <textarea class="fi" id="cn-economy" rows="4" placeholder="How does soft currency flow? What are the sinks and faucets? Free vs paid power gap? Pity mechanics?">${esc(c.monetization.economy)}</textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CANVAS ── -->
+  <div class="section-block">
+    <div class="sh"><div class="sh-label">&#9998; SKETCH CANVAS</div><div class="sh-line"></div></div>
+    <div class="panel">
+      <div class="canvas-toolbar">
+        <button class="tool-btn active" id="tb-pen" onclick="setTool('pen')">&#9998; PEN</button>
+        <button class="tool-btn" id="tb-eraser" onclick="setTool('eraser')">&#9003; ERASER</button>
+        <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
+        ${['#00ff88','#ffd700','#00cfff','#ff4455','#bf7fff','#ff9944','#ffffff','#c8ffd8'].map(function(col){
+          return '<div class="color-swatch'+(col===currentColor?' active':'')+'" style="background:'+col+'" onclick="setColor(\''+col+'\')" title="'+col+'"></div>';
+        }).join('')}
+        <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
+        <label style="font-size:8px;color:var(--muted)">SIZE</label>
+        <input type="range" class="size-slider" min="1" max="20" value="${currentSize}" oninput="setSize(this.value)">
+        <button class="btn btn-s" style="margin-left:auto" onclick="clearCanvas()">&#10006; CLEAR</button>
+        <button class="btn btn-b" onclick="saveCanvasImg()">&#8595; SAVE PNG</button>
+      </div>
+      <canvas id="draw-canvas"></canvas>
+    </div>
+  </div>
+
+  <!-- ── SCRATCHPAD ── -->
+  <div class="section-block">
+    <div class="sh"><div class="sh-label">&#128203; SCRATCHPAD &amp; NOTES</div><div class="sh-line"></div></div>
+    <div class="panel">
+      <textarea class="scratchpad" id="cn-scratch" placeholder="Brain dump, to-dos, random ideas, questions to answer later...&#10;This auto-saves as you type.">${esc(c.scratchpad)}</textarea>
+      <div class="autosave-note">&#128337; Auto-saving...</div>
+    </div>
+  </div>
+
+  <!-- ── CUSTOM SECTIONS ── -->
+  <div class="section-block">
+    <div class="sh"><div class="sh-label">&#43; CUSTOM SECTIONS</div><div class="sh-line"></div></div>
+    <div id="custom-sections-container">${customHTML}</div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="add-section-btn" style="flex:1" onclick="addCustomSection('text')">&#43; ADD TEXT SECTION</button>
+      <button class="add-section-btn" style="flex:1" onclick="addCustomSection('checklist')">&#43; ADD CHECKLIST</button>
+    </div>
+  </div>
+
+  <!-- ── COMPETITORS ── -->
+  <div class="section-block">
+    <div class="sh"><div class="sh-label">&#128269; COMPETITOR &amp; REFERENCE GAMES</div><div class="sh-line"></div></div>
+    <div class="panel">
+      <div class="comp-grid" id="comp-grid">${compHTML}</div>
+      <div class="comp-add-row">
+        <input id="comp-input" placeholder="Paste Universe ID or Roblox game URL..." onkeydown="if(event.key==='Enter')addCompetitor()">
+        <button class="btn btn-b" onclick="addCompetitor()">&#43; ADD GAME</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="brow" style="justify-content:flex-end;margin-top:8px">
+    <button class="btn btn-s" onclick="exportConcept()">&#8593; EXPORT JSON</button>
+    <button class="btn btn-r" onclick="deleteConcept('${c.id}',event)">&#128465; DELETE CONCEPT</button>
+  </div>
+  `;
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ══════════════════════════════════════
+//  STATUS & GENRE
+// ══════════════════════════════════════
+function setStatus(s) {
+  var c = getConcept(activeCID); if(!c) return;
+  c.status = s;
+  document.querySelectorAll('.status-tag').forEach(function(btn){ btn.classList.remove('active'); });
+  document.querySelector('.status-tag.'+s).classList.add('active');
+  saveConcepts(); renderSidebar();
+}
+function toggleGenre(g) {
+  var c = getConcept(activeCID); if(!c) return;
+  if(!c.genre) c.genre=[];
+  var idx = c.genre.indexOf(g);
+  if(idx>-1) c.genre.splice(idx,1); else c.genre.push(g);
+  document.querySelectorAll('.genre-tag').forEach(function(btn){
+    btn.classList.toggle('active', c.genre.includes(btn.textContent));
+  });
+  saveConcepts();
+}
+
+// ══════════════════════════════════════
+//  IMAGE UPLOAD
+// ══════════════════════════════════════
+function triggerUpload(inputId) { document.getElementById(inputId).click(); }
+function handleImageUpload(field, zoneId, e) {
+  var file = e.target.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var c = getConcept(activeCID); if(!c) return;
+    c[field] = ev.target.result;
+    saveConcepts();
+    selectConcept(activeCID);
+  };
+  reader.readAsDataURL(file);
+}
+function clearImage(field) {
+  var c = getConcept(activeCID); if(!c) return;
+  c[field] = null; saveConcepts(); selectConcept(activeCID);
+}
+
+// ══════════════════════════════════════
+//  MONETIZATION ITEMS
+// ══════════════════════════════════════
+function buildMonoItems(items, prefix, namePlaceholder, color) {
+  return (items||[]).map(function(item, i){
+    return `<div class="mono-item" data-prefix="${prefix}" data-idx="${i}">
+      <input class="item-name" style="color:${color}" placeholder="${namePlaceholder}" value="${esc(item.name)}" oninput="autoSave()">
+      <input class="item-price price" placeholder="R$ price" value="${esc(item.price)}" oninput="autoSave()">
+      <button class="del-item" onclick="this.closest('.mono-item').remove();autoSave()">&#10005;</button>
+    </div>`;
+  }).join('');
+}
+function addMonoItem(prefix) {
+  var listId = prefix+'-list';
+  var list = document.getElementById(listId); if(!list) return;
+  var color = prefix==='gp'?'var(--yellow)':'var(--orange)';
+  var ph = prefix==='gp'?'Gamepass Name':'Product Name';
+  var div = document.createElement('div');
+  div.className='mono-item'; div.dataset.prefix=prefix;
+  div.innerHTML=`<input class="item-name" style="color:${color}" placeholder="${ph}" oninput="autoSave()">
+    <input class="item-price price" placeholder="R$ price" oninput="autoSave()">
+    <button class="del-item" onclick="this.closest('.mono-item').remove();autoSave()">&#10005;</button>`;
+  list.appendChild(div);
+  div.querySelector('input').focus();
+}
+
+// ══════════════════════════════════════
+//  CANVAS DRAWING
+// ══════════════════════════════════════
+function initCanvas(c) {
+  var canvas = document.getElementById('draw-canvas'); if(!canvas) return;
+  var dpr = window.devicePixelRatio || 1;
+  canvas.width  = canvas.offsetWidth  * dpr;
+  canvas.height = canvas.offsetHeight * dpr;
+  drawCtx = canvas.getContext('2d');
+  drawCtx.scale(dpr, dpr);
+  drawCtx.lineCap = 'round';
+  drawCtx.lineJoin = 'round';
+
+  // Restore saved drawing
+  if (c.canvas) {
+    var img = new Image();
+    img.onload = function(){ drawCtx.drawImage(img, 0, 0); };
+    img.src = c.canvas;
+  }
+
+  canvas.addEventListener('mousedown',  startDraw);
+  canvas.addEventListener('mousemove',  draw);
+  canvas.addEventListener('mouseup',    endDraw);
+  canvas.addEventListener('mouseleave', endDraw);
+  canvas.addEventListener('touchstart', startDrawTouch, {passive:false});
+  canvas.addEventListener('touchmove',  drawTouch,      {passive:false});
+  canvas.addEventListener('touchend',   endDraw);
+}
+
+function getPos(canvas, e) {
+  var r = canvas.getBoundingClientRect();
+  return { x: (e.clientX - r.left) * (canvas.width / r.width / (window.devicePixelRatio||1)),
+           y: (e.clientY - r.top)  * (canvas.height / r.height / (window.devicePixelRatio||1)) };
+}
+function startDraw(e) {
+  isDrawing = true;
+  var p = getPos(this, e);
+  lastX = p.x; lastY = p.y;
+  drawCtx.beginPath();
+  drawCtx.arc(lastX, lastY, (currentTool==='eraser'?currentSize*3:currentSize)/2, 0, Math.PI*2);
+  drawCtx.fillStyle = currentTool==='eraser'?'#0a0f0a':currentColor;
+  drawCtx.fill();
+}
+function draw(e) {
+  if (!isDrawing) return;
+  var p = getPos(this, e);
+  drawCtx.beginPath();
+  drawCtx.moveTo(lastX, lastY);
+  drawCtx.lineTo(p.x, p.y);
+  drawCtx.strokeStyle = currentTool==='eraser'?'#0a0f0a':currentColor;
+  drawCtx.lineWidth   = currentTool==='eraser'?currentSize*4:currentSize;
+  drawCtx.stroke();
+  lastX = p.x; lastY = p.y;
+}
+function endDraw() {
+  if (!isDrawing) return;
+  isDrawing = false;
+  var canvas = document.getElementById('draw-canvas'); if(!canvas) return;
+  var c = getConcept(activeCID); if(!c) return;
+  c.canvas = canvas.toDataURL('image/png');
+  saveConcepts();
+}
+function startDrawTouch(e) {
+  e.preventDefault();
+  var t = e.touches[0];
+  startDraw.call(document.getElementById('draw-canvas'), {clientX:t.clientX,clientY:t.clientY});
+}
+function drawTouch(e) {
+  e.preventDefault();
+  var t = e.touches[0];
+  draw.call(document.getElementById('draw-canvas'), {clientX:t.clientX,clientY:t.clientY});
+}
+function setTool(tool) {
+  currentTool = tool;
+  document.querySelectorAll('.tool-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('tb-'+tool).classList.add('active');
+}
+function setColor(col) {
+  currentColor = col;
+  document.querySelectorAll('.color-swatch').forEach(function(s){
+    s.classList.toggle('active', s.style.background===col || s.style.backgroundColor===col);
+  });
+}
+function setSize(v) { currentSize = parseInt(v); }
+function clearCanvas() {
+  if(!drawCtx) return;
+  var canvas = document.getElementById('draw-canvas');
+  drawCtx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+  var c = getConcept(activeCID); if(c){ c.canvas=null; saveConcepts(); }
+}
+function saveCanvasImg() {
+  var canvas = document.getElementById('draw-canvas'); if(!canvas) return;
+  var a = document.createElement('a');
+  a.download = (getConcept(activeCID)||{name:'sketch'}).name.replace(/\s+/g,'_')+'-sketch.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
+// ══════════════════════════════════════
+//  CUSTOM SECTIONS
+// ══════════════════════════════════════
+function buildCustomSectionHTML(sec) {
+  var csid = sec.id || ('cs'+Date.now()+Math.random().toString(36).slice(2,6));
+  if(sec.type==='text'){
+    return `<div class="custom-section" data-csid="${csid}" data-type="text">
+      <div class="cs-header">
+        <input class="cs-title-input" value="${esc(sec.title)}" placeholder="SECTION TITLE" oninput="autoSave()">
+        <button class="cs-del" onclick="this.closest('.custom-section').remove();autoSave()">&#10005;</button>
+      </div>
+      <textarea class="cs-textarea" placeholder="Write anything..." oninput="autoSave()">${esc(sec.content)}</textarea>
+    </div>`;
+  } else {
+    var items = (sec.items||[]).map(function(item){
+      return `<div class="check-item${item.done?' done':''}">
+        <input type="checkbox" ${item.done?'checked':''} onchange="this.closest('.check-item').classList.toggle('done',this.checked);autoSave()">
+        <input class="ci-text" value="${esc(item.text)}" placeholder="To-do item..." oninput="autoSave()">
+        <button class="ci-del" onclick="this.closest('.check-item').remove();autoSave()">&#10005;</button>
+      </div>`;
+    }).join('');
+    return `<div class="custom-section" data-csid="${csid}" data-type="checklist">
+      <div class="cs-header">
+        <input class="cs-title-input" value="${esc(sec.title)}" placeholder="CHECKLIST TITLE" oninput="autoSave()">
+        <button class="cs-del" onclick="this.closest('.custom-section').remove();autoSave()">&#10005;</button>
+      </div>
+      <div class="checklist">${items}</div>
+      <button class="add-check-btn" onclick="addCheckItem(this)">+ ADD ITEM</button>
+    </div>`;
+  }
+}
+
+function addCustomSection(type) {
+  var container = document.getElementById('custom-sections-container'); if(!container) return;
+  var sec = { id:'cs'+Date.now(), title: type==='text'?'NEW SECTION':'NEW CHECKLIST', type:type, content:'', items:[] };
+  var div = document.createElement('div');
+  div.outerHTML; // just to avoid lint
+  container.insertAdjacentHTML('beforeend', buildCustomSectionHTML(sec));
+  // Re-bind autosave
+  container.querySelectorAll('input,textarea').forEach(function(el){
+    el.addEventListener('input', autoSave);
+  });
+  autoSave();
+  container.lastElementChild.querySelector('.cs-title-input').focus();
+}
+
+function addCheckItem(btn) {
+  var list = btn.previousElementSibling;
+  var div = document.createElement('div'); div.className='check-item';
+  div.innerHTML='<input type="checkbox" onchange="this.closest(\'.check-item\').classList.toggle(\'done\',this.checked);autoSave()">'
+    +'<input class="ci-text" placeholder="To-do item..." oninput="autoSave()">'
+    +'<button class="ci-del" onclick="this.closest(\'.check-item\').remove();autoSave()">&#10005;</button>';
+  list.appendChild(div);
+  div.querySelector('.ci-text').focus();
+}
+
+// ══════════════════════════════════════
+//  COMPETITORS
+// ══════════════════════════════════════
+function addCompetitor() {
+  var inp = document.getElementById('comp-input'); if(!inp) return;
+  var raw = inp.value.trim(); if(!raw) return;
+
+  // Extract universe ID from URL or plain number
+  var uid = raw.replace(/.*games\/(\d+).*/,'$1').replace(/[^\d]/g,'');
+  if(!uid){ alert('Could not parse a Universe ID. Paste the full URL or just the numeric ID.'); return; }
+  inp.value = '';
+
+  // Add placeholder card
+  var c = getConcept(activeCID); if(!c) return;
+  var entry = { id: uid, name: 'Loading...', ccu: null, visits: null, thumb: null };
+  c.competitors.push(entry);
+  saveConcepts();
+  renderCompGrid(c);
+
+  // Fetch from Roblox API
+  fetch(PROXY+'/v1/games?universeIds='+uid)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var g = (d.data||[])[0]; if(!g) return;
+      entry.name   = g.name || 'Unknown';
+      entry.ccu    = g.playing || 0;
+      entry.visits = g.visits || 0;
+      // Fetch thumbnail
+      return fetch('https://thumbnails.roproxy.com/v1/games/multiget/thumbnails?universeIds='+uid+'&countPerUniverse=1&defaults=true&size=768x432&format=Png')
+        .then(function(r){ return r.json(); })
+        .then(function(td){
+          var item = (td.data||[])[0];
+          entry.thumb = item&&item.thumbnails&&item.thumbnails[0]?item.thumbnails[0].imageUrl:null;
+          saveConcepts(); renderCompGrid(getConcept(activeCID));
+        });
+    })
+    .catch(function(){
+      entry.name = 'Universe ID: '+uid;
+      saveConcepts(); renderCompGrid(getConcept(activeCID));
+    });
+}
+
+function buildCompCardHTML(comp) {
+  return `<div class="comp-card" id="comp-${comp.id}">
+    <div class="comp-thumb">
+      ${comp.thumb ? `<img src="${esc(comp.thumb)}" loading="lazy">` : '<div class="comp-thumb-placeholder">&#127918;</div>'}
+    </div>
+    <div class="comp-body">
+      <button class="comp-del" onclick="removeCompetitor('${comp.id}')">&#10005;</button>
+      <div class="comp-name">${esc(comp.name)}</div>
+      <div class="comp-ccu">
+        <div class="comp-ccu-dot"></div>
+        <span class="comp-ccu-val">${comp.ccu !== null ? comp.ccu.toLocaleString('en-IN') : '—'}</span>
+        <span style="color:var(--muted);font-size:8px">playing</span>
+      </div>
+      <div class="comp-visits">${comp.visits !== null ? comp.visits.toLocaleString('en-IN')+' total visits' : ''}</div>
+    </div>
+  </div>`;
+}
+
+function renderCompGrid(c) {
+  var grid = document.getElementById('comp-grid'); if(!grid) return;
+  grid.innerHTML = (c.competitors||[]).map(buildCompCardHTML).join('');
+}
+
+function removeCompetitor(uid) {
+  var c = getConcept(activeCID); if(!c) return;
+  c.competitors = (c.competitors||[]).filter(function(x){ return x.id !== uid; });
+  saveConcepts(); renderCompGrid(c);
+}
+
+// ══════════════════════════════════════
+//  EXPORT CONCEPT
+// ══════════════════════════════════════
+function exportConcept() {
+  collectCurrentForm();
+  var c = getConcept(activeCID); if(!c) return;
+  var blob = new Blob([JSON.stringify(c, null, 2)], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = c.name.replace(/\s+/g,'_')+'-concept.json';
+  a.click();
+  showToast('CONCEPT EXPORTED \u2713');
+}
+
+// ══════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════
+function showToast(msg){
+  var t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2200);
+}
+</script>
+</body>
+</html>
