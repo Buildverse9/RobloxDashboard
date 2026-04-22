@@ -90,12 +90,6 @@
   .c-green{color:var(--green);} .c-yellow{color:var(--yellow);} .c-blue{color:var(--blue);}
   .c-purple{color:var(--purple);} .c-red{color:var(--red);} .c-muted{color:var(--muted);}
 
-  .like-section{}
-  .like-header{display:flex;justify-content:space-between;font-size:8px;color:var(--muted);margin-bottom:4px;}
-  .like-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;display:flex;}
-  .like-fill{height:100%;background:var(--green);transition:width .8s ease;}
-  .dislike-fill{height:100%;background:var(--red);transition:width .8s ease;}
-
   .ccu-bar-wrap{height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
   .ccu-bar-fill{height:100%;background:var(--green);transition:width .8s ease;box-shadow:0 0 8px rgba(0,255,136,.4);}
 
@@ -257,15 +251,23 @@ function loadCCU() {
           var detMap = {};
           (det.data || []).forEach(function(d) { detMap[d.id] = d; });
 
-          var votesP = proxyFetch('/v1/games/votes?universeIds=' + uIds, 'games', false);
-          var thumbP = fetch(activeProxy.thumb + '/v1/games/multiget/thumbnails?universeIds=' + uIds + '&countPerUniverse=1&defaults=true&size=768x432&format=Png&isCircular=false')
+          return fetch(activeProxy.thumb + '/v1/games/multiget/thumbnails?universeIds=' + uIds + '&countPerUniverse=1&defaults=true&size=768x432&format=Png&isCircular=false')
             .then(function(r) { return r.json(); })
-            .catch(function() { return { data: [] }; });
-
-          return Promise.all([votesP, thumbP]).then(function(results) {
-            prepareData(allGames, detMap, results[0], results[1]);
-            document.getElementById('ccu-updated').style.color = 'var(--muted)';
-          });
+            .then(function(thumbData) {
+              var thumbMap = {};
+              (thumbData.data || []).forEach(function(t) {
+                if (t.thumbnails && t.thumbnails[0]) {
+                  thumbMap[t.universeId] = t.thumbnails[0].imageUrl;
+                }
+              });
+              prepareData(allGames, detMap, thumbMap);
+              document.getElementById('ccu-updated').style.color = 'var(--muted)';
+            })
+            .catch(function(err) {
+              console.warn('Thumbnail sync failed', err);
+              prepareData(allGames, detMap, {});
+              document.getElementById('ccu-updated').style.color = 'var(--muted)';
+            });
         });
   })
   .catch(function(err) {
@@ -282,17 +284,14 @@ function loadCCU() {
   });
 }
 
-function prepareData(games, detMap, voteMap, thumbMap) {
+function prepareData(games, detMap, thumbMap) {
   allGamesData = games.map(function(g) {
     var det  = detMap[g.id]  || {};
-    var vote = voteMap[g.id] || {};
     return {
       id:       g.id,
       name:     g.name || 'Unnamed Game',
       ccu:      det.playing    || 0,
       visits:   det.visits     || 0,
-      likes:    vote.upVotes   || 0,
-      dislikes: vote.downVotes || 0,
       thumb:    thumbMap[g.id] || null
     };
   });
@@ -328,8 +327,6 @@ function renderGamesGrid(data) {
     var peak     = peakData[item.id] || item.ccu;
     var isPeak   = item.ccu > 0 && item.ccu === peak;
     var pct      = maxCCU > 0 ? Math.round((item.ccu / maxCCU) * 100) : 0;
-    var total    = item.likes + item.dislikes;
-    var likePct  = total > 0 ? Math.round((item.likes / total) * 100) : 50;
 
     var card = document.createElement('div');
     card.className = 'game-card';
@@ -344,10 +341,6 @@ function renderGamesGrid(data) {
           + '<div class="stat-cell"><span class="stat-cell-label">PLAYING NOW</span><span class="stat-cell-val c-green">' + fmt(item.ccu) + trendHtml + '</span></div>'
           + statCell('PEAK CCU', fmt(peak), 'c-yellow')
           + statCell('VISITS', fmtBig(item.visits), 'c-blue')
-        + '</div>'
-        + '<div class="like-section">'
-          + '<div class="like-header"><span>&#9829; ' + likePct + '%</span><span>' + fmtBig(total) + ' votes</span></div>'
-          + '<div class="like-bar"><div class="like-fill" style="width:' + likePct + '%"></div><div class="dislike-fill" style="width:' + (100 - likePct) + '%"></div></div>'
         + '</div>'
         + '<div class="ccu-bar-wrap"><div class="ccu-bar-fill" style="width:' + pct + '%"></div></div>'
       + '</div>';
