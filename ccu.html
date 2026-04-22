@@ -169,7 +169,7 @@
 <footer>YASH STUDIO — LIVE CCU &nbsp;&#183;&nbsp; PEAK CCU TRACKED IN BROWSER &nbsp;&#183;&nbsp; DATA VIA ROBLOX API</footer>
 
 <script>
-var GROUP_ID = 149548372;
+var GROUP_IDS = [149548372, 610009273];
 var allGamesData = []; // Store for filtering
 
 // Two proxies — try primary first, fall back to secondary
@@ -203,13 +203,19 @@ function proxyFetch(path, type = 'games') {
 }
 
 function fetchGroupInfo() {
-    proxyFetch('/v1/groups/' + GROUP_ID, 'groups')
-        .then(function(data) {
+    var memberTotal = 0;
+    var names = [];
+    
+    Promise.all(GROUP_IDS.map(id => proxyFetch('/v1/groups/' + id, 'groups')))
+        .then(function(results) {
+            results.forEach(data => {
+                memberTotal += data.memberCount;
+                names.push(data.name.toUpperCase());
+            });
             document.getElementById('group-info-box').style.display = 'block';
-            document.getElementById('group-name-label').textContent = data.name.toUpperCase();
-            document.getElementById('group-member-count').textContent = fmt(data.memberCount) + ' MEMBERS';
-            document.getElementById('group-description').textContent = data.description || 'No description available.';
-            document.getElementById('group-description').title = data.description;
+            document.getElementById('group-name-label').textContent = names.join(' + ');
+            document.getElementById('group-member-count').textContent = fmt(memberTotal) + ' TOTAL MEMBERS';
+            document.getElementById('group-description').textContent = 'Aggregated data for ' + results.length + ' groups.';
         })
         .catch(console.error);
 }
@@ -230,13 +236,19 @@ function loadCCU() {
   document.getElementById('games-grid').innerHTML =
     '<div class="game-card" style="grid-column:1/-1"><div class="game-loading"><span class="spinner"></span>FETCHING GAMES...</div></div>';
 
-  proxyFetch('/v2/groups/' + GROUP_ID + '/games?accessFilter=Public&limit=50&sortOrder=Asc')
-    .then(function(d) {
-      var games = d.data || [];
-      if (!games.length) { showError('No public games found in this group.', 'Make sure your games are set to Public in Roblox Studio.'); return; }
-      document.getElementById('game-count-badge').textContent = games.length + ' GAMES';
+  Promise.all(GROUP_IDS.map(id => 
+    proxyFetch('/v2/groups/' + id + '/games?accessFilter=Public&limit=50&sortOrder=Asc')
+  ))
+  .then(function(results) {
+      var allGames = [];
+      results.forEach(res => {
+          if (res.data) allGames = allGames.concat(res.data);
+      });
 
-      var uIds = games.map(function(g) { return g.id; }).join(',');
+      if (!allGames.length) { showError('No public games found.', 'Check group settings.'); return; }
+      document.getElementById('game-count-badge').textContent = allGames.length + ' GAMES';
+
+      var uIds = allGames.map(function(g) { return g.id; }).join(',');
 
       return proxyFetch('/v1/games?universeIds=' + uIds)
         .then(function(det) {
@@ -265,18 +277,18 @@ function loadCCU() {
             .catch(function() { return {}; });
 
           return Promise.all([votesP, thumbP]).then(function(results) {
-            prepareData(games, detMap, results[0], results[1]);
+            prepareData(allGames, detMap, results[0], results[1]);
           });
         });
-    })
-    .catch(function(err) {
+  })
+  .catch(function(err) {
       showError('Could not reach Roblox API.', 'Both proxies failed. Try again later.');
-    })
-    .then(function() {
+  })
+  .then(function() {
       btn.disabled = false; btn.textContent = '⟳ REFRESH';
       document.getElementById('ccu-updated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
       document.getElementById('proxy-badge').textContent = 'via ' + activeProxy.name;
-    });
+  });
 }
 
 function prepareData(games, detMap, voteMap, thumbMap) {
