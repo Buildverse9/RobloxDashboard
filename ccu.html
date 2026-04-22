@@ -183,7 +183,12 @@ var activeProxy = PROXIES[0];
 var peakData = {};
 try { peakData = JSON.parse(localStorage.getItem('ys-peak-ccu') || '{}'); } catch(e) {}
 
-window.onload = function() { loadCCU(); fetchGroupInfo(); };
+window.onload = function() { 
+  loadCCU(); 
+  fetchGroupInfo(); 
+  // Auto-refresh every 10 seconds
+  setInterval(loadCCU, 10000);
+};
 
 // ── Resilient fetch: try primary proxy, fall back to secondary
 function proxyFetch(path, type = 'games') {
