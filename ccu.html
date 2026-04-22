@@ -170,12 +170,12 @@
 
 <script>
 var GROUP_IDS = [149548372, 610009273];
-var allGamesData = []; // Store for filtering
+var allGamesData = []; 
+var lastCCUData = {}; // Store previous CCU for trends
 
-// Two proxies — try primary first, fall back to secondary
+// Use RoProxy as primary.
 var PROXIES = [
-  { games: 'https://games.roproxy.com', thumb: 'https://thumbnails.roproxy.com', groups: 'https://groups.roproxy.com', name: 'RoProxy' },
-  { games: 'https://games.robloxproxy.com', thumb: 'https://thumbnails.robloxproxy.com', groups: 'https://groups.robloxproxy.com', name: 'RobloxProxy' }
+  { games: 'https://games.roproxy.com', thumb: 'https://thumbnails.roproxy.com', groups: 'https://groups.roproxy.com', name: 'RoProxy' }
 ];
 var activeProxy = PROXIES[0];
 
@@ -190,37 +190,38 @@ window.onload = function() {
   setInterval(loadCCU, 10000);
 };
 
-// ── Resilient fetch: try primary proxy, fall back to secondary
-function proxyFetch(path, type = 'games') {
+// ── Resilient fetch: handles critical errors differently
+function proxyFetch(path, type = 'games', critical = true) {
   var baseUrl = activeProxy[type] || activeProxy.games;
-  var url1 = baseUrl + path;
-  return fetch(url1).then(function(r) {
+  var url = baseUrl + path;
+  
+  return fetch(url).then(function(r) {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     return r.json();
-  }).catch(function() {
-    // Try other proxy
-    var other = PROXIES.find(function(p) { return p.name !== activeProxy.name; });
-    if (!other) throw new Error('All proxies failed');
-    activeProxy = other;
-    var nextUrl = (other[type] || other.games) + path;
-    return fetch(nextUrl).then(function(r) { return r.json(); });
+  }).catch(function(err) {
+    console.warn('Fetch failed for ' + path, err);
+    if (critical) throw err;
+    return { data: [] };
   });
 }
 
 function fetchGroupInfo() {
-    var memberTotal = 0;
-    var names = [];
-    
-    Promise.all(GROUP_IDS.map(id => proxyFetch('/v1/groups/' + id, 'groups')))
+    Promise.all(GROUP_IDS.map(id => proxyFetch('/v1/groups/' + id, 'groups', false)))
         .then(function(results) {
+            var memberTotal = 0;
+            var names = [];
             results.forEach(data => {
-                memberTotal += data.memberCount;
-                names.push(data.name.toUpperCase());
+                if (data && data.name) {
+                    memberTotal += data.memberCount || 0;
+                    names.push(data.name.toUpperCase());
+                }
             });
-            document.getElementById('group-info-box').style.display = 'block';
-            document.getElementById('group-name-label').textContent = names.join(' + ');
-            document.getElementById('group-member-count').textContent = fmt(memberTotal) + ' TOTAL MEMBERS';
-            document.getElementById('group-description').textContent = 'Aggregated data for ' + results.length + ' groups.';
+            if (names.length > 0) {
+                document.getElementById('group-info-box').style.display = 'block';
+                document.getElementById('group-name-label').textContent = names.join(' + ');
+                document.getElementById('group-member-count').textContent = fmt(memberTotal) + ' TOTAL MEMBERS';
+                document.getElementById('group-description').textContent = 'Aggregated data for ' + names.length + ' groups.';
+            }
         })
         .catch(console.error);
 }
@@ -235,14 +236,10 @@ function filterGames() {
 
 function loadCCU() {
   var btn = document.getElementById('refresh-btn');
-  btn.disabled = true; btn.textContent = '⟳ LOADING...';
-  document.getElementById('total-ccu').textContent = '—';
-  document.getElementById('game-count-badge').textContent = 'LOADING';
-  document.getElementById('games-grid').innerHTML =
-    '<div class="game-card" style="grid-column:1/-1"><div class="game-loading"><span class="spinner"></span>FETCHING GAMES...</div></div>';
+  btn.disabled = true; btn.textContent = '⟳ SYNCING...';
 
   Promise.all(GROUP_IDS.map(id => 
-    proxyFetch('/v2/groups/' + id + '/games?accessFilter=Public&limit=50&sortOrder=Asc')
+    proxyFetch('/v2/groups/' + id + '/games?accessFilter=Public&limit=50&sortOrder=Asc', 'games', true)
   ))
   .then(function(results) {
       var allGames = [];
@@ -250,48 +247,37 @@ function loadCCU() {
           if (res.data) allGames = allGames.concat(res.data);
       });
 
-      if (!allGames.length) { showError('No public games found.', 'Check group settings.'); return; }
+      if (!allGames.length) return; 
       document.getElementById('game-count-badge').textContent = allGames.length + ' GAMES';
 
       var uIds = allGames.map(function(g) { return g.id; }).join(',');
 
-      return proxyFetch('/v1/games?universeIds=' + uIds)
+      return proxyFetch('/v1/games?universeIds=' + uIds, 'games', true)
         .then(function(det) {
           var detMap = {};
           (det.data || []).forEach(function(d) { detMap[d.id] = d; });
 
-          var votesP = proxyFetch('/v1/games/votes?universeIds=' + uIds)
-            .then(function(v) {
-              var m = {};
-              (v.data || []).forEach(function(x) { m[x.id] = x; });
-              return m;
-            })
-            .catch(function() { return {}; });
-
+          var votesP = proxyFetch('/v1/games/votes?universeIds=' + uIds, 'games', false);
           var thumbP = fetch(activeProxy.thumb + '/v1/games/multiget/thumbnails?universeIds=' + uIds + '&countPerUniverse=1&defaults=true&size=768x432&format=Png&isCircular=false')
             .then(function(r) { return r.json(); })
-            .then(function(td) {
-              var m = {};
-              (td.data || []).forEach(function(item) {
-                if (item.thumbnails && item.thumbnails[0] && item.thumbnails[0].imageUrl) {
-                  m[item.universeId] = item.thumbnails[0].imageUrl;
-                }
-              });
-              return m;
-            })
-            .catch(function() { return {}; });
+            .catch(function() { return { data: [] }; });
 
           return Promise.all([votesP, thumbP]).then(function(results) {
             prepareData(allGames, detMap, results[0], results[1]);
+            document.getElementById('ccu-updated').style.color = 'var(--muted)';
           });
         });
   })
   .catch(function(err) {
-      showError('Could not reach Roblox API.', 'Both proxies failed. Try again later.');
+      console.error('Update cycle failed:', err);
+      document.getElementById('ccu-updated').textContent = 'Sync delayed... Retrying';
+      document.getElementById('ccu-updated').style.color = 'var(--red)';
   })
   .then(function() {
       btn.disabled = false; btn.textContent = '⟳ REFRESH';
-      document.getElementById('ccu-updated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+      if (!document.getElementById('ccu-updated').textContent.includes('Retrying')) {
+          document.getElementById('ccu-updated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+      }
       document.getElementById('proxy-badge').textContent = 'via ' + activeProxy.name;
   });
 }
@@ -311,7 +297,6 @@ function prepareData(games, detMap, voteMap, thumbMap) {
     };
   });
 
-  // Apply sorting
   var sortType = document.getElementById('sort-order').value;
   if (sortType === 'ccu') allGamesData.sort((a,b) => b.ccu - a.ccu);
   else if (sortType === 'visits') allGamesData.sort((a,b) => b.visits - a.visits);
@@ -330,6 +315,15 @@ function renderGamesGrid(data) {
   data.forEach(function(item, idx) {
     totalCCU += item.ccu;
 
+    // Trend logic
+    var trendHtml = '';
+    if (lastCCUData[item.id] !== undefined) {
+        var diff = item.ccu - lastCCUData[item.id];
+        if (diff > 0) trendHtml = '<span style="color:var(--green); font-size:10px; margin-left:4px;">▲' + diff + '</span>';
+        else if (diff < 0) trendHtml = '<span style="color:var(--red); font-size:10px; margin-left:4px;">▼' + Math.abs(diff) + '</span>';
+    }
+    lastCCUData[item.id] = item.ccu;
+
     if (!peakData[item.id] || item.ccu > peakData[item.id]) peakData[item.id] = item.ccu;
     var peak     = peakData[item.id] || item.ccu;
     var isPeak   = item.ccu > 0 && item.ccu === peak;
@@ -347,7 +341,7 @@ function renderGamesGrid(data) {
       + '<div class="game-body">'
         + '<div class="game-name">' + item.name + '</div>'
         + '<div class="stats-grid">'
-          + statCell('PLAYING NOW', fmt(item.ccu), 'c-green')
+          + '<div class="stat-cell"><span class="stat-cell-label">PLAYING NOW</span><span class="stat-cell-val c-green">' + fmt(item.ccu) + trendHtml + '</span></div>'
           + statCell('PEAK CCU', fmt(peak), 'c-yellow')
           + statCell('VISITS', fmtBig(item.visits), 'c-blue')
         + '</div>'
@@ -362,7 +356,6 @@ function renderGamesGrid(data) {
 
   document.getElementById('total-ccu').textContent = fmt(totalCCU);
 }
-
 
 function statCell(label, val, colorClass) {
   return '<div class="stat-cell">'
