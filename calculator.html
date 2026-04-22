@@ -35,7 +35,27 @@
       radial-gradient(ellipse at 85% 90%, rgba(0,207,255,0.04) 0%, transparent 55%),
       repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(0,255,136,0.025) 39px, rgba(0,255,136,0.025) 40px),
       repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(0,255,136,0.025) 39px, rgba(0,255,136,0.025) 40px);
+    position: relative;
   }
+  body::after {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    background-size: 100% 4px, 3px 100%;
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.1;
+  }
+
+  .quick-btns { display: flex; gap: 8px; margin-top: 12px; }
+  .q-btn {
+    background: rgba(0,255,136,0.05); border: 1px solid rgba(0,255,136,0.2);
+    border-radius: 4px; color: var(--green); font-size: 10px; padding: 6px 10px;
+    cursor: pointer; font-family: var(--font-hud); transition: all 0.2s;
+  }
+  .q-btn:hover { background: rgba(0,255,136,0.15); border-color: var(--green); }
+  .q-btn:active { transform: scale(0.95); }
 
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
@@ -174,6 +194,12 @@
       <div class="conv-field">
         <label>ROBUX AMOUNT</label>
         <input id="conv-in" type="number" min="0" placeholder="0" oninput="doConvert()">
+        <div class="quick-btns">
+            <button class="q-btn" onclick="setRbx(1000)">1K</button>
+            <button class="q-btn" onclick="setRbx(10000)">10K</button>
+            <button class="q-btn" onclick="setRbx(50000)">50K</button>
+            <button class="q-btn" onclick="setRbx(100000)">100K</button>
+        </div>
         <div class="conv-hint">Type any Robux amount</div>
       </div>
       <div class="conv-arrow">
@@ -215,6 +241,11 @@ function fetchRate() {
       document.getElementById('nav-rate').textContent = '83.50*';
       document.getElementById('conv-rate-disp').textContent = '83.50*';
     });
+}
+
+function setRbx(val) {
+  document.getElementById('conv-in').value = val;
+  doConvert();
 }
 
 function doConvert() {
